@@ -1,0 +1,53 @@
+# simple-translate-import (for GitHub raw)
+# Host this file as a public raw file (raw.githubusercontent.com or gist raw URL).
+# Usage:
+# 1) Create a public Gist or repo file and paste the entire content of this file.
+# 2) Copy the RAW URL (raw.githubusercontent.com/... or gist.githubusercontent.com/.../raw/...).
+# 3) In your empty shortcut "翻译（ChatGPT）", add action "获取 URL 内容 (Get Contents of URL)".
+# 4) Paste the raw URL and run. The shortcut will fetch the JSON payload below and use it to generate the translation actions.
+#
+# IMPORTANT:
+# - Replace YOUR_OPENAI_API_KEY in the URL query or in the fetched payload with your real key if you prefer (safer to edit in Shortcuts after generation).
+# - This file is the *payload* that your Shortcuts will fetch. Because Apple restricts unsigned .shortcut imports, this approach expects the shortcut to fetch this JSON and then create actions programmatically.
+# - If Shortcuts doesn't programmatically create actions from a fetched JSON payload on your device, follow the Manual Recreate steps included below.
+#
+{
+  "type": "simple-translate-generator-v1",
+  "description": "Generator payload for 翻译（ChatGPT） — simple A version (泰↔中, minimal) using gpt-5.1 via api.openai.com",
+  "model": "gpt-5.1",
+  "endpoint": "https://api.openai.com/v1/chat/completions",
+  "notes": "After fetching, edit the Authorization header to include your real key 'Bearer sk-...', OR append ?apiKey=sk-... to the fetch URL if you prefer.",
+  "generator": {
+    "name": "翻译（ChatGPT） - 自动生成（A 版）",
+    "steps": [
+      {"action":"GetClipboard"},
+      {"action":"MatchText","pattern":"[\\u0E00-\\u0E7F]","regex":true,"input":"Clipboard","save":"hasThaiMatch"},
+      {"action":"If","condition":"hasThaiMatch","is":"true"},
+      [
+        {"action":"SetVariable","name":"sourceText","value":"Clipboard"},
+        {"action":"Text","value":"把下面的泰语翻译成简体中文，语气自然、随意、男性口吻，不要“ครับ”，不要解释，只输出翻译后的中文：\n\n{{sourceText}}"},
+        {"action":"GetContentsOfURL","method":"POST","url":"https://api.openai.com/v1/chat/completions","headers":[{"name":"Content-Type","value":"application/json"},{"name":"Authorization","value":"Bearer YOUR_OPENAI_API_KEY"}],"body":{"model":"gpt-5.1","messages":[{"role":"system","content":"你是翻译器，只返回翻译结果，不要解释。"},{"role":"user","content":"{{Text}}"}],"temperature":0.2,"max_tokens":800}},
+        {"action":"GetDictionaryValue","key":"choices"},
+        {"action":"GetDictionaryValue","key":"0"},
+        {"action":"GetDictionaryValue","key":"message"},
+        {"action":"GetDictionaryValue","key":"content","save":"translatedText"},
+        {"action":"CopyToClipboard","input":"translatedText"},
+        {"action":"ShowResult","input":"translatedText"}
+      ],
+      "Else",
+      [
+        {"action":"AskForInput","prompt":"请输入要翻译成泰语的中文：","default":"Clipboard","save":"sourceText"},
+        {"action":"Text","value":"请把下面的中文翻译成地道泰语，语气自然、随意、男性说法，不要“ครับ”，不要解释。\n\n原文：\n{{sourceText}}"},
+        {"action":"GetContentsOfURL","method":"POST","url":"https://api.openai.com/v1/chat/completions","headers":[{"name":"Content-Type","value":"application/json"},{"name":"Authorization","value":"Bearer YOUR_OPENAI_API_KEY"}],"body":{"model":"gpt-5.1","messages":[{"role":"system","content":"你是翻译器，只返回翻译结果，不要解释。"},{"role":"user","content":"{{Text}}"}],"temperature":0.2,"max_tokens":800}},
+        {"action":"GetDictionaryValue","key":"choices"},
+        {"action":"GetDictionaryValue","key":"0"},
+        {"action":"GetDictionaryValue","key":"message"},
+        {"action":"GetDictionaryValue","key":"content","save":"translatedText"},
+        {"action":"CopyToClipboard","input":"translatedText"},
+        {"action":"ShowResult","input":"translatedText"}
+      ]
+    ]
+  },
+  "manual_recreate": "If your Shortcuts does not support programmatic creation from fetched payload, open Shortcuts and manually create actions following the steps in the 'steps' array above. Use Get Clipboard, Match Text (regex [\\u0E00-\\u0E7F]), If, Set Variable, Text (prompt), Get Contents of URL (POST to api.openai.com/v1/chat/completions), parse choices[0].message.content, copy and show result.",
+  "example_raw_install_url_format": "https://raw.githubusercontent.com/<your-username>/<repo>/main/simple-translate-import.txt"
+}
